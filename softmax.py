@@ -48,12 +48,13 @@ def delta(x, y):
   return 1 if x == y else 0
 
 def run(training_examples, testing_examples):
-  global params_over_time, incorrect_predictions
+  global params_over_time
   parameter_matrix, params_over_time = train(training_examples)
   if len(testing_examples[0][0]) != len(training_examples[0][0]):
     raise IOError, "training and testing data dimensions do not match"
   incorrect_predictions = test(parameter_matrix, testing_examples)
   print "error rate (%):", 100 * float(len(incorrect_predictions)) / len(testing_examples)
+  save_incorrect_predictions(incorrect_predictions)
 
 def train(training_examples):
   parameter_matrix = numpy.zeros((NUM_CLASSES, len(training_examples[0][0])))
@@ -101,6 +102,11 @@ def test(parameter_matrix, testing_examples):
 def predict(parameter_matrix, data):
   exponents = numpy.dot(parameter_matrix, data)
   return numpy.argmax(exponents)
+
+def save_incorrect_predictions(incorrect_predictions):
+  f = open("incorrect_predictions", "w")
+  f.write(str(incorrect_predictions))
+  f.close()
 
 def training_examples():
   return zip_examples("train-images-idx3-ubyte", "train-labels-idx1-ubyte")

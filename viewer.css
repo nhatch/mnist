@@ -1,6 +1,9 @@
 table {
-  margin-top: 10px;
-  visibility: hidden;
+  margin: 10px;
   border: 1px solid black;
   border-spacing: 0;
+}
+
+p {
+  font-family: monospace;
 }

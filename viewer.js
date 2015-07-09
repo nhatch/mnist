@@ -2,11 +2,11 @@ var numDimensions;
 var dimensions = [];
 var images = [];
 
-function loadIdx() {
+function loadIdx(filename) {
   var req = new XMLHttpRequest();
   req.onload = function() { populateTable(req.response); }
   req.responseType = "arraybuffer";
-  req.open("GET", "train-images-idx3-ubyte", true);
+  req.open("GET", filename, true);
   req.send();
 }
 
@@ -18,8 +18,8 @@ function populateTable(rawIdx) {
     dimensions.push(dimension);
   }
   constructImages(idx);
-  createTable();
-  showImage(0);
+  createDynamicViewer(0);
+  loadStaticComparisons("incorrect_predictions");
 }
 
 function constructImages(idx) {
@@ -37,8 +37,46 @@ function constructImages(idx) {
   }
 }
 
+function loadStaticComparisons(filename) {
+  var req = new XMLHttpRequest();
+  req.onload = function() {
+    createStaticComparisons(JSON.parse(req.responseText));
+  }
+  req.open("GET", filename, true);
+  req.send();
+}
+
+function createStaticComparisons(incorrectPredictions) {
+  document.getElementById("status").innerHTML = "Loading incorrect predictions...";
+  setTimeout(function() {
+    for (var i = 0; i < incorrectPredictions.length; i++) {
+      prediction = incorrectPredictions[i];
+      createStaticViewer(prediction[0], prediction[1], prediction[2]);
+    }
+    document.getElementById("status").innerHTML = ""
+  }, 0);
+}
+
+function createDynamicViewer(index) {
+  var table = createTable();
+  showImage(index, table);
+  document.body.appendChild(table);
+  var input = createInputForTable(table);
+  input.value = index;
+  document.body.appendChild(input);
+}
+
+function createStaticViewer(index, actualLabel, predictedLabel) {
+  var table = createTable();
+  showImage(index, table);
+  document.body.appendChild(table);
+  var p = document.createElement("p");
+  p.innerHTML = "predicted " + predictedLabel + ", actual " + actualLabel;
+  document.body.appendChild(p);
+}
+
 function createTable() {
-  var table = document.getElementById("table");
+  var table = document.createElement("table");
   var numRows = dimensions[1];
   var numCols = dimensions[2];
   for (var i = 0; i < numRows; i++) {
@@ -47,12 +85,18 @@ function createTable() {
       tr.insertCell();
     }
   }
-  table.style.visibility = "visible";
+  return table;
 }
 
-function showImage(index) {
+function createInputForTable(table) {
+  var input = document.createElement("input");
+  input.type = "number";
+  input.onchange = function() { showImage(input.value, table) }
+  return input
+}
+
+function showImage(index, table) {
   var image = images[index];
-  var table = document.getElementById("table");
   var numRows = dimensions[1];
   var numCols = dimensions[2];
   for (var i = 0; i < numRows; i++) {
