@@ -5,9 +5,10 @@ import math
 import sys
 
 NUM_CLASSES = 10
-MINIBATCH_SIZE = 5
+MINIBATCH_SIZE = 50
 REGULARIZATION_PENALTY = 0.01
-INITIAL_LEARNING_RATE: 1.0
+INITIAL_LEARNING_RATE = 1.0
+LEARNING_RATE_DECREASE_FACTOR = 2.0
 CONVERGENCE_THRESHOLD = 0.2
 
 def gradient_for_minibatch(parameter_matrix, minibatch):
@@ -67,7 +68,7 @@ def train(training_examples):
     print "change from epoch %d: %f" % (epoch, norm)
     if norm < CONVERGENCE_THRESHOLD or epoch >= 10:
       break
-    learning_rate = learning_rate / 5
+    learning_rate = learning_rate / LEARNING_RATE_DECREASE_FACTOR
   return parameter_matrix, params_over_time
 
 def run_epoch(parameter_matrix, training_examples, learning_rate):
