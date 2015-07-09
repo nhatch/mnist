@@ -7,3 +7,8 @@ table {
 p {
   font-family: monospace;
 }
+
+p#status {
+  position: absolute;
+  top: 100px;
+}

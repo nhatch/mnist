@@ -64,6 +64,7 @@ function createDynamicViewer(index) {
   var input = createInputForTable(table);
   input.value = index;
   document.body.appendChild(input);
+  input.focus();
 }
 
 function createStaticViewer(index, actualLabel, predictedLabel) {
