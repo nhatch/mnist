@@ -2,6 +2,8 @@
 
 An investigation into neural networks using the [MNIST database](http://yann.lecun.com/exdb/mnist/) of handwritten digits.
 
+Currently the softmax classifier has an error rate of about 10%.
+
 ## 1. MNIST Viewer
 
 A simple page for viewing MNIST images.
@@ -23,7 +25,8 @@ An implementation of the softmax algorithm that can be used to classify MNIST im
 
 ```python
 import softmax
-train = softmax.training_examples(); test = softmax.testing_examples() # takes a few seconds
+train = softmax.training_examples() # takes a few seconds
+test = softmax.testing_examples()
 # train = train[:1000] # if you want it to finish faster
 softmax.run(train, test) # takes quite a while
 ```
