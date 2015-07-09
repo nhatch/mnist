@@ -21,10 +21,12 @@ An implementation of the softmax algorithm that can be used to classify MNIST im
 1. Download/unzip the MNIST training/test data/labels (four files total) into this directory.
 2. Test it out:
 
-    > import softmax
-    > train = softmax.training_examples(); test = softmax.testing_examples() # takes a few seconds
-    > # train = train[:1000] # if you want it to finish faster
-    > softmax.run(train, test) # takes quite a while
+```python
+import softmax
+train = softmax.training_examples(); test = softmax.testing_examples() # takes a few seconds
+# train = train[:1000] # if you want it to finish faster
+softmax.run(train, test) # takes quite a while
+```
 
 3. Feel free to poke around with the algorithm constants to see if you can reduce the error rate.
 4. The incorrect predictions on the test data are stored for investigation in `softmax.incorrect_predictions`.
