@@ -4,7 +4,7 @@ An investigation into neural networks using the [MNIST database](http://yann.lec
 
 Currently the softmax classifier has an error rate of about 10%.
 
-## 1. MNIST Viewer
+## MNIST Viewer
 
 A simple page for viewing MNIST images.
 
@@ -12,7 +12,7 @@ A simple page for viewing MNIST images.
 2. Start a web server in this directory. For example: `python -m SimpleHTTPServer`
 3. Visit the server in a web browser. (In the example above, it's at [localhost:8000](http://localhost:8000).) Have fun!
 
-## 2. Softmax Algorithm
+## Softmax Algorithm
 
 An implementation of the softmax algorithm that can be used to classify MNIST images.
 
