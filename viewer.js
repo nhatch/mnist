@@ -47,14 +47,16 @@ function loadStaticComparisons(filename) {
 }
 
 function createStaticComparisons(incorrectPredictions) {
-  document.getElementById("status").innerHTML = "Loading incorrect predictions...";
-  setTimeout(function() {
-    for (var i = 0; i < incorrectPredictions.length; i++) {
-      prediction = incorrectPredictions[i];
+  var counter = 0;
+  var createSomeViewers = function() {
+    for (var i = 0; i < 10; i++) {
+      prediction = incorrectPredictions[counter];
       createStaticViewer(prediction[0], prediction[1], prediction[2]);
+      if (++counter == incorrectPredictions.length) { return }
     }
-    document.getElementById("status").innerHTML = ""
-  }, 0);
+    setTimeout(createSomeViewers, 100);
+  }
+  createSomeViewers();
 }
 
 function createDynamicViewer(index) {
