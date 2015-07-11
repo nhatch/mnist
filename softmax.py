@@ -1,4 +1,3 @@
-#!/usr/bin/python
 import struct
 import numpy
 import math
@@ -109,10 +108,10 @@ def save_incorrect_predictions(incorrect_predictions):
   f.close()
 
 def training_examples():
-  return zip_examples("train-images-idx3-ubyte", "train-labels-idx1-ubyte")
+  return zip_examples("train-images", "train-labels")
 
 def testing_examples():
-  return zip_examples("t10k-images-idx3-ubyte", "t10k-labels-idx1-ubyte")
+  return zip_examples("test-images", "test-labels")
 
 def zip_examples(data_filename, label_filename):
   training_data = read_data_file(data_filename)
