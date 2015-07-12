@@ -54,6 +54,7 @@ def run(training_examples, testing_examples):
   incorrect_predictions = test(parameter_matrix, testing_examples)
   print "error rate (%):", 100 * float(len(incorrect_predictions)) / len(testing_examples)
   save_incorrect_predictions(incorrect_predictions)
+  save_parameter_matrix(parameter_matrix)
 
 def train(training_examples):
   parameter_matrix = numpy.zeros((NUM_CLASSES, len(training_examples[0][0])))
@@ -156,4 +157,19 @@ def read_label_file(filename):
   labels = struct.unpack(data_type*label_dimensions[0], f.read(label_dimensions[0]))
   f.close()
   return labels
+
+def save_parameter_matrix(parameter_matrix):
+  import idx
+  idx.write("parameter_matrix", square_parameters(parameter_matrix))
+
+def square_parameters(parameter_matrix):
+  side_length = int(math.sqrt(len(parameter_matrix[0]) - 1))
+  return map(lambda(v): vector_to_ubyte_square(v, side_length), parameter_matrix)
+
+def vector_to_ubyte_square(parameter_vector, side_length):
+  parameter_vector = parameter_vector[1:] # ignore the constant term
+  factor = 255 / (parameter_vector.max() - parameter_vector.min())
+  shifted_vector = numpy.add(parameter_vector, -parameter_vector.min())
+  normalized_vector = numpy.dot(shifted_vector, factor).astype(int)
+  return normalized_vector.reshape(side_length, side_length)
 

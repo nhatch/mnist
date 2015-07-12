@@ -1,29 +1,30 @@
-var numDimensions;
-var dimensions = [];
 var images = [];
+var parameterImages = [];
 
-function loadIdx(filename) {
+function loadIdx(filename, imageArray, callback) {
   var req = new XMLHttpRequest();
-  req.onload = function() { populateTable(req.response); }
+  req.onload = function() {
+    populateArray(req.response, imageArray);
+    callback();
+  }
   req.responseType = "arraybuffer";
   req.open("GET", filename, true);
   req.send();
 }
 
-function populateTable(rawIdx) {
+function populateArray(rawIdx, imageArray) {
   var idx = new Uint8Array(rawIdx);
-  numDimensions = idx[3];
+  var numDimensions = idx[3];
+  var dimensions = [];
   for (var i = 0; i < numDimensions; i++) {
-    dimension = intFromBigEndianByteArray(idx.subarray(4 + 4*i, 8 + 4*i));
+    var dimension = intFromBigEndianByteArray(idx.subarray(4 + 4*i, 8 + 4*i));
     dimensions.push(dimension);
   }
-  constructImages(idx);
-  createDynamicViewer(0);
-  loadStaticComparisons("incorrect_predictions");
+  constructImages(idx, dimensions, imageArray);
 }
 
-function constructImages(idx) {
-  var counter = 4 + 4*numDimensions;
+function constructImages(idx, dimensions, imageArray) {
+  var counter = 4 + 4*dimensions.length;
   for (var i = 0; i < dimensions[0]; i++) {
     var image = [];
     for (var j = 0; j < dimensions[1]; j++) {
@@ -33,25 +34,53 @@ function constructImages(idx) {
       }
       image.push(row);
     }
-    images.push(image);
+    imageArray.push(image);
   }
 }
 
-function loadStaticComparisons(filename) {
+loadIdx("parameter_matrix", parameterImages, function () {
+  var parameterImagesDiv = document.createElement("div");
+  createParameterImageViewers(parameterImagesDiv);
+  document.body.appendChild(parameterImagesDiv);
+});
+
+loadIdx("test-images", images, function () {
+  var imageBrowserDiv = document.createElement("div");
+  var incorrectPredictionsDiv = document.createElement("div");
+  createDynamicViewer(imageBrowserDiv, images, 0);
+  createIncorrectPredictionViewers(incorrectPredictionsDiv);
+  document.body.appendChild(imageBrowserDiv);
+  document.body.appendChild(incorrectPredictionsDiv);
+});
+
+function createParameterImageViewers(div) {
+  for (var i = 0; i < parameterImages.length; i++) {
+    var subtitle = createSubtitle(i);
+    var image = parameterImages[i];
+    createStaticViewer(div, image, subtitle);
+  }
+}
+
+function createIncorrectPredictionViewers(div) {
   var req = new XMLHttpRequest();
   req.onload = function() {
-    createStaticComparisons(JSON.parse(req.responseText));
+    createStaticComparisons(div, JSON.parse(req.responseText));
   }
-  req.open("GET", filename, true);
+  req.open("GET", "incorrect_predictions", true);
   req.send();
 }
 
-function createStaticComparisons(incorrectPredictions) {
+function createStaticComparisons(div, incorrectPredictions) {
   var counter = 0;
   var createSomeViewers = function() {
     for (var i = 0; i < 10; i++) {
-      prediction = incorrectPredictions[counter];
-      createStaticViewer(prediction[0], prediction[1], prediction[2]);
+      var prediction = incorrectPredictions[counter];
+      var subtitle = createSubtitle(
+        "predicted: " + prediction[2] + "<br />actual:    " + prediction[1]
+      );
+      subtitle.style.whiteSpace = "pre";
+      var image = images[prediction[0]];
+      createStaticViewer(div, image, subtitle);
       if (++counter == incorrectPredictions.length) { return }
     }
     setTimeout(createSomeViewers, 100);
@@ -59,49 +88,67 @@ function createStaticComparisons(incorrectPredictions) {
   createSomeViewers();
 }
 
-function createDynamicViewer(index) {
-  var table = createTable();
-  showImage(index, table);
-  document.body.appendChild(table);
-  var input = createInputForTable(table);
-  input.value = index;
-  document.body.appendChild(input);
+function createDynamicViewer(div, imageArray, startingIndex) {
+  var image = imageArray[startingIndex];
+  var table = createTable(image);
+  var span = document.createElement("span");
+  span.className = "container";
+  span.appendChild(table);
+  var input = createInputForTable(table, imageArray);
+  input.value = startingIndex;
+  span.appendChild(input);
   input.focus();
+  div.appendChild(span);
 }
 
-function createStaticViewer(index, actualLabel, predictedLabel) {
-  var table = createTable();
-  showImage(index, table);
-  document.body.appendChild(table);
-  var p = document.createElement("p");
-  p.innerHTML = "predicted " + predictedLabel + ", actual " + actualLabel;
-  document.body.appendChild(p);
+function createStaticViewer(div, image, subtitle) {
+  var table = createTable(image);
+  var span = document.createElement("span");
+  span.className = "container";
+  span.appendChild(table);
+  span.appendChild(subtitle);
+  div.appendChild(span);
 }
 
-function createTable() {
+function createTable(image) {
   var table = document.createElement("table");
-  var numRows = dimensions[1];
-  var numCols = dimensions[2];
+  var numRows = image.length;
+  var numCols = image[0].length;
   for (var i = 0; i < numRows; i++) {
     var tr = table.insertRow();
     for (var j = 0; j < numCols; j++) {
       tr.insertCell();
     }
   }
+  showImage(image, table);
   return table;
 }
 
-function createInputForTable(table) {
-  var input = document.createElement("input");
-  input.type = "number";
-  input.onchange = function() { showImage(input.value, table) }
-  return input
+function createSubtitle(content) {
+  var subtitle = document.createElement("span");
+  subtitle.innerHTML = content;
+  subtitle.className = "subtitle";
+  return subtitle;
 }
 
-function showImage(index, table) {
-  var image = images[index];
-  var numRows = dimensions[1];
-  var numCols = dimensions[2];
+function createInputForTable(table, imageArray) {
+  var input = document.createElement("input");
+  input.type = "number";
+  input.onchange = function() {
+    if (input.value < 0) {
+      input.value = 0;
+    } else if (input.value >= imageArray.length) {
+      input.value = imageArray.length - 1;
+    } else {
+      showImage(imageArray[input.value], table);
+    }
+  }
+  return input;
+}
+
+function showImage(image, table) {
+  var numRows = table.rows.length;
+  var numCols = table.rows[0].cells.length;
   for (var i = 0; i < numRows; i++) {
     var tr = table.rows[i];
     var row = image[i];

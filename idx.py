@@ -24,7 +24,7 @@ def read_list(f, input_dimensions):
 def write(filename, data):
   dimensions = []
   current = data
-  while type(current) != int:
+  while hasattr(current, '__iter__'):
     dimensions.append(len(current))
     current = current[0]
   f = open(filename, "wb")
@@ -34,7 +34,7 @@ def write(filename, data):
   f.close()
 
 def write_list(f, data):
-  if type(data[0]) != int:
+  if hasattr(data[0], '__iter__'):
     for subdata in data:
       write_list(f, subdata)
   else:

@@ -1,14 +1,24 @@
 table {
-  margin: 10px;
+  margin: auto;
   border: 1px solid black;
   border-spacing: 0;
 }
 
-p {
+body {
   font-family: monospace;
+  text-align: center;
 }
 
-p#status {
-  position: absolute;
-  top: 100px;
+input {
+  display: block;
+  margin-top: 10px;
+}
+
+span.container {
+  margin: 15px;
+  display: inline-block;
+}
+
+span.subtitle {
+  display: block;
 }
