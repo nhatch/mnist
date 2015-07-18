@@ -38,7 +38,7 @@ function constructImages(idx, dimensions, imageArray) {
   }
 }
 
-loadIdx("parameter_matrix", parameterImages, function () {
+loadIdx("parameters", parameterImages, function () {
   var parameterImagesDiv = document.createElement("div");
   createParameterImageViewers(parameterImagesDiv);
   document.body.appendChild(parameterImagesDiv);

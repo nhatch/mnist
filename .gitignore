@@ -9,4 +9,6 @@ test-images
 test-labels
 
 incorrect_predictions
-parameter_matrix
+parameters
+
+favicon.ico
