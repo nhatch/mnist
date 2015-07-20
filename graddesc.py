@@ -3,8 +3,8 @@ import numpy
 import math
 import sys
 
-MINIBATCH_SIZE = 50
-INITIAL_LEARNING_RATE = 1.0
+MINIBATCH_SIZE = 1
+INITIAL_LEARNING_RATE = 0.1
 LEARNING_RATE_DECREASE_FACTOR = 2.0
 CONVERGENCE_THRESHOLD = 0.2
 
@@ -12,9 +12,9 @@ def use_algorithm(module):
   global alg
   alg = module
 
-def run(training_examples, testing_examples):
+def run(training_examples, validation_examples, testing_examples):
   global params_over_time
-  parameters, params_over_time = train(training_examples)
+  parameters, params_over_time = train(training_examples, validation_examples)
   if len(testing_examples[0][0]) != len(training_examples[0][0]):
     raise IOError, "training and testing data dimensions do not match"
   incorrect_predictions = test(parameters, testing_examples)
@@ -22,26 +22,32 @@ def run(training_examples, testing_examples):
   save_incorrect_predictions(incorrect_predictions)
   alg.save_parameters(parameters)
 
-def train(training_examples):
+def train(training_examples, validation_examples):
   parameters = alg.initial_parameters(len(training_examples[0][0]))
   params_over_time = []
+  loss_over_time = []
   learning_rate = INITIAL_LEARNING_RATE
   epoch = 0
   while True:
     params_over_time.append(parameters)
     epoch += 1
     parameters = run_epoch(parameters, training_examples, learning_rate)
-    norm = alg.distance_between(params_over_time[-1], parameters)
-    print "change from epoch %d: %f" % (epoch, norm)
-    if norm < CONVERGENCE_THRESHOLD or epoch >= 10:
+    loss = alg.loss(parameters, validation_examples)
+    loss_over_time.append(loss)
+    print "loss from epoch %d: %f" % (epoch, loss)
+    if loss < CONVERGENCE_THRESHOLD or epoch > 10:
       break
-    learning_rate = learning_rate / LEARNING_RATE_DECREASE_FACTOR
+    if (len(loss_over_time) > 2) and (loss_over_time[-1] / loss_over_time[-3] > 0.99):
+      learning_rate = learning_rate / LEARNING_RATE_DECREASE_FACTOR
   return parameters, params_over_time
 
 def run_epoch(parameters, training_examples, learning_rate):
   for minibatch in slice_array(training_examples, MINIBATCH_SIZE):
     gradient = gradient_for_minibatch(parameters, minibatch)
-    parameters = numpy.subtract(parameters, numpy.dot(gradient, learning_rate))
+    update = numpy.dot(gradient, learning_rate)
+    update_ratio = alg.norm(update) / alg.norm(parameters)
+    print "update ratio:", update_ratio
+    parameters = numpy.subtract(parameters, gradient)
   return parameters
 
 def gradient_for_minibatch(parameters, minibatch):
@@ -109,7 +115,7 @@ def read_data_file(filename):
   data = []
   for i in range(input_dimensions[0]):
     raw_datum = struct.unpack(data_type*bytes_per_datum, f.read(bytes_per_datum))
-    transformed_datum = numpy.array(map(lambda(x): x/256.0, raw_datum))
+    transformed_datum = numpy.array(map(lambda(x): x/256.0 - 0.5, raw_datum))
     data.append(transformed_datum)
   f.close()
   return data
