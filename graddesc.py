@@ -3,10 +3,11 @@ import numpy
 import math
 import sys
 
-MINIBATCH_SIZE = 1
-INITIAL_LEARNING_RATE = 0.1
+MINIBATCH_SIZE = 128
+INITIAL_LEARNING_RATE = 0.01
 LEARNING_RATE_DECREASE_FACTOR = 2.0
-CONVERGENCE_THRESHOLD = 0.2
+CONVERGENCE_THRESHOLD = 10
+DESIRED_LOSS_DECREASE_RATE = 1.1
 
 def use_algorithm(module):
   global alg
@@ -14,15 +15,21 @@ def use_algorithm(module):
 
 def run(training_examples, validation_examples, testing_examples):
   global params_over_time
-  parameters, params_over_time = train(training_examples, validation_examples)
   if len(testing_examples[0][0]) != len(training_examples[0][0]):
     raise IOError, "training and testing data dimensions do not match"
+  try:
+    parameters, params_over_time = train(training_examples, validation_examples)
+  except KeyboardInterrupt:
+    pass
   incorrect_predictions = test(parameters, testing_examples)
   print "error rate (%):", 100 * float(len(incorrect_predictions)) / len(testing_examples)
   save_incorrect_predictions(incorrect_predictions)
   alg.save_parameters(parameters)
 
 def train(training_examples, validation_examples):
+  global velocity, momentum
+  velocity = None
+  momentum = 0.5
   parameters = alg.initial_parameters(len(training_examples[0][0]))
   params_over_time = []
   loss_over_time = []
@@ -35,19 +42,25 @@ def train(training_examples, validation_examples):
     loss = alg.loss(parameters, validation_examples)
     loss_over_time.append(loss)
     print "loss from epoch %d: %f" % (epoch, loss)
-    if loss < CONVERGENCE_THRESHOLD or epoch > 10:
+    if loss < CONVERGENCE_THRESHOLD:
       break
-    if (len(loss_over_time) > 2) and (loss_over_time[-1] / loss_over_time[-3] > 0.99):
+    if (len(loss_over_time) >= 2) and (loss_over_time[-2] / loss_over_time[-1] < DESIRED_LOSS_DECREASE_RATE):
       learning_rate = learning_rate / LEARNING_RATE_DECREASE_FACTOR
+      print "Decreasing learning rate to %f" % learning_rate
+      momentum = 0.9
   return parameters, params_over_time
 
 def run_epoch(parameters, training_examples, learning_rate):
+  global velocity, momentum
   for minibatch in slice_array(training_examples, MINIBATCH_SIZE):
     gradient = gradient_for_minibatch(parameters, minibatch)
     update = numpy.dot(gradient, learning_rate)
     update_ratio = alg.norm(update) / alg.norm(parameters)
-    print "update ratio:", update_ratio
-    parameters = numpy.subtract(parameters, gradient)
+    if velocity is None:
+      velocity = update
+    else:
+      velocity = numpy.add(numpy.dot(velocity, momentum), update)
+    parameters = numpy.subtract(parameters, velocity)
   return parameters
 
 def gradient_for_minibatch(parameters, minibatch):
