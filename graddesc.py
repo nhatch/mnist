@@ -6,7 +6,7 @@ import sys
 MINIBATCH_SIZE = 128
 INITIAL_LEARNING_RATE = 0.01
 LEARNING_RATE_DECREASE_FACTOR = 2.0
-CONVERGENCE_THRESHOLD = 10
+CONVERGENCE_THRESHOLD = 0.05
 DESIRED_LOSS_DECREASE_RATE = 1.1
 
 def use_algorithm(module):
@@ -17,10 +17,7 @@ def run(training_examples, validation_examples, testing_examples):
   global params_over_time
   if len(testing_examples[0][0]) != len(training_examples[0][0]):
     raise IOError, "training and testing data dimensions do not match"
-  try:
-    parameters, params_over_time = train(training_examples, validation_examples)
-  except KeyboardInterrupt:
-    pass
+  parameters, params_over_time = train(training_examples, validation_examples)
   incorrect_predictions = test(parameters, testing_examples)
   print "error rate (%):", 100 * float(len(incorrect_predictions)) / len(testing_examples)
   save_incorrect_predictions(incorrect_predictions)
@@ -38,13 +35,16 @@ def train(training_examples, validation_examples):
   while True:
     params_over_time.append(parameters)
     epoch += 1
-    parameters = run_epoch(parameters, training_examples, learning_rate)
+    try:
+      parameters = run_epoch(parameters, training_examples, learning_rate)
+    except KeyboardInterrupt:
+      break
     loss = alg.loss(parameters, validation_examples)
     loss_over_time.append(loss)
     print "loss from epoch %d: %f" % (epoch, loss)
     if loss < CONVERGENCE_THRESHOLD:
       break
-    if (len(loss_over_time) >= 2) and (loss_over_time[-2] / loss_over_time[-1] < DESIRED_LOSS_DECREASE_RATE):
+    if (len(loss_over_time) > 2) and (loss_over_time[-2] / loss_over_time[-1] < DESIRED_LOSS_DECREASE_RATE):
       learning_rate = learning_rate / LEARNING_RATE_DECREASE_FACTOR
       print "Decreasing learning rate to %f" % learning_rate
       momentum = 0.9

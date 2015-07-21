@@ -91,7 +91,7 @@ def norm(parameter_type_array):
 
 def loss(parameters, examples):
   _verify_type(parameters)
-  return sum(map(lambda(e): _loss_for_example(parameters, e), examples))
+  return sum(map(lambda(e): _loss_for_example(parameters, e), examples)) / len(examples)
 
 def _loss_for_example(parameters, example):
   datum = example[0]
