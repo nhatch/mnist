@@ -2,8 +2,8 @@ import numpy
 import math
 import utils
 
-NUM_CLASSES = 2
-NUM_HIDDEN_UNITS = 10
+NUM_CLASSES = 10
+NUM_HIDDEN_UNITS = 64
 UNITS_LAYERS = [NUM_HIDDEN_UNITS, NUM_CLASSES]
 ACTIVATION_FUNCTION = math.tanh
 DERIVATIVE_OF_ACTIVATION_FUNCTION = lambda(x): 1 - math.tanh(x)**2
@@ -108,4 +108,22 @@ def save_parameters(parameters):
   # TODO
   global mlp_parameters
   mlp_parameters = parameters
+
+def numerical_approximation_of_gradient(parameters, example):
+  delta = 2**-13
+  base_loss = _loss_for_example(parameters, example)
+  gradient_layers = []
+  for parameter_layer in parameters:
+    gradient_layer = []
+    for i in range(len(parameter_layer)):
+      row = parameter_layer[i]
+      gradient_row = []
+      for j in range(len(row)):
+        row[j] += delta
+        new_loss = _loss_for_example(parameters, example)
+        gradient_row.append((new_loss - base_loss) / delta)
+        row[j] -= delta
+      gradient_layer.append(gradient_row)
+    gradient_layers.append(numpy.array(gradient_layer))
+  return numpy.array(gradient_layers)
 
