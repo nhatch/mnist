@@ -105,9 +105,10 @@ def predict(parameters, datum):
   return numpy.argmax(unit_outputs[-1])
 
 def save_parameters(parameters):
-  # TODO
   global mlp_parameters
   mlp_parameters = parameters
+  import idx
+  idx.write("parameters", utils.square_parameters(parameters[0]))
 
 def numerical_approximation_of_gradient(parameters, example):
   delta = 2**-13

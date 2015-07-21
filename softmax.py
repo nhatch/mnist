@@ -36,16 +36,4 @@ def distance_between(a, b):
 
 def save_parameters(parameters):
   import idx
-  idx.write("parameters", _square_parameters(parameters))
-
-def _square_parameters(parameters):
-  side_length = int(math.sqrt(len(parameters[0]) - 1))
-  return map(lambda(v): _vector_to_ubyte_square(v, side_length), parameters)
-
-def _vector_to_ubyte_square(parameter_vector, side_length):
-  parameter_vector = parameter_vector[1:] # ignore the constant term
-  factor = 255 / (parameter_vector.max() - parameter_vector.min())
-  shifted_vector = numpy.add(parameter_vector, -parameter_vector.min())
-  normalized_vector = numpy.dot(shifted_vector, factor).astype(int)
-  return normalized_vector.reshape(side_length, side_length)
-
+  idx.write("parameters", utils.square_parameters(parameters))
