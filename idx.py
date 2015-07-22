@@ -1,4 +1,5 @@
 import struct
+import numpy
 
 def read(filename):
   f = open(filename, "rb")
@@ -50,3 +51,28 @@ def crop(filename, border_size):
   cropped_data = crop_borders(data, border_size)
   write("cropped-" + filename, cropped_data)
 
+def half(filename):
+  data = read(filename)
+  halved_data = map(half_size, data)
+  write("halved-" + filename, halved_data)
+
+def half_size(array):
+  return map(half_list, half_array(array))
+
+def half_array(array):
+  new_array = []
+  for i in range(len(array)/2):
+    avg = avg_lists(array[2*i], array[2*i+1])
+    new_array.append(avg)
+  return new_array
+
+def avg_lists(l1, l2):
+  new_list = numpy.add(l1, l2)
+  return map(lambda(x): x/2, new_list)
+
+def half_list(l):
+  new_list = []
+  for i in range(len(l)/2):
+    avg = (l[2*i] + l[2*i+1]) / 2
+    new_list.append(avg)
+  return new_list
