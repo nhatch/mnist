@@ -20,7 +20,8 @@ def initial_parameters(data_dimension):
   return numpy.array(parameter_layers)
 
 def _random_weights(num_upper_units, num_lower_units):
-  return numpy.dot(0.02, numpy.random.rand(num_upper_units, num_lower_units+1))
+  sigma = 1 / math.sqrt(num_upper_units)
+  return numpy.dot(sigma, numpy.random.randn(num_upper_units, num_lower_units+1))
 
 def regularization_gradient(parameters):
   _verify_type(parameters)
