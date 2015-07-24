@@ -35,6 +35,8 @@ def train(training_examples, validation_examples):
   while True:
     params_over_time.append(parameters)
     epoch += 1
+    import random
+    random.shuffle(training_examples)
     try:
       parameters = run_epoch(parameters, training_examples, learning_rate)
     except KeyboardInterrupt:
