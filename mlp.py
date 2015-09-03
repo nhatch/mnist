@@ -9,7 +9,6 @@ ACTIVATION_FUNCTION = math.tanh
 DERIVATIVE_OF_ACTIVATION_FUNCTION = lambda(x): 1 - math.tanh(x)**2
 
 def initial_parameters(data_dimension):
-  # These sizes do not include the constant-1 output on each layer
   lower_layer_sizes = [data_dimension] + UNITS_LAYERS[:-1]
   upper_layer_sizes = UNITS_LAYERS
   dimension_pairs = zip(upper_layer_sizes, lower_layer_sizes)
@@ -21,12 +20,12 @@ def initial_parameters(data_dimension):
 
 def _random_weights(num_upper_units, num_lower_units):
   sigma = 1 / math.sqrt(num_upper_units)
+  # The +1 adds an extra column for the bias terms
   return numpy.dot(sigma, numpy.random.randn(num_upper_units, num_lower_units+1))
 
 def regularization_gradient(parameters):
   _verify_type(parameters)
-  r = map(utils.regularization_gradient_ignoring_constant, parameters)
-  return r
+  return map(utils.regularization_gradient_ignoring_constant, parameters)
 
 def probability_gradient_for_example(parameters, example):
   _verify_type(parameters)
@@ -92,14 +91,27 @@ def norm(parameter_type_array):
 
 def loss(parameters, examples):
   _verify_type(parameters)
-  return sum(map(lambda(e): _loss_for_example(parameters, e), examples)) / len(examples)
+  example_loss = sum(map(lambda(e): _loss_for_example(parameters, e), examples)) / len(examples)
+  return example_loss + _regularization_loss_for_parameters(parameters)
 
 def _loss_for_example(parameters, example):
+  return _prediction_loss_for_example(parameters, example)
+
+def _prediction_loss_for_example(parameters, example):
   datum = example[0]
   label = example[1]
   expected_outputs = numpy.zeros(NUM_CLASSES); expected_outputs[label] = 1
   actual_outputs = _calculate_outputs(parameters, datum, False)[-1]
   return 0.5 * numpy.linalg.norm(numpy.subtract(expected_outputs, actual_outputs))**2
+
+def _regularization_loss_for_parameters(parameters):
+  return sum(map(_regularization_loss_for_parameter_layer, parameters))
+
+def _regularization_loss_for_parameter_layer(two_dimensional_matrix):
+  zeroer = numpy.identity(two_dimensional_matrix.shape[1])
+  zeroer[0,0] = 0
+  zeroed_matrix = numpy.dot(two_dimensional_matrix, zeroer)
+  return utils.REGULARIZATION_PENALTY * numpy.linalg.norm(zeroed_matrix) ** 2
 
 def predict(parameters, datum):
   unit_outputs = _calculate_outputs(parameters, datum, False)

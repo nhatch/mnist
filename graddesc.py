@@ -6,8 +6,7 @@ import sys
 MINIBATCH_SIZE = 128
 INITIAL_LEARNING_RATE = 0.01
 LEARNING_RATE_DECREASE_FACTOR = 2.0
-CONVERGENCE_THRESHOLD = 0.05
-DESIRED_LOSS_DECREASE_RATE = 1.1
+DESIRED_LOSS_DECREASE_RATE = 0.0001 # 0.01%
 
 def use_algorithm(module):
   global alg
@@ -41,28 +40,34 @@ def train(training_examples, validation_examples):
       parameters = run_epoch(parameters, training_examples, learning_rate)
     except KeyboardInterrupt:
       break
-    loss = alg.loss(parameters, validation_examples)
+    loss = alg.loss(parameters, training_examples)
     loss_over_time.append(loss)
-    print "loss from epoch %d: %f" % (epoch, loss)
-    if loss < CONVERGENCE_THRESHOLD:
-      break
-    if (len(loss_over_time) > 2) and (loss_over_time[-2] / loss_over_time[-1] < DESIRED_LOSS_DECREASE_RATE):
+    percent_decrease = (1 - loss_over_time[-1] / loss_over_time[-2]) * 100 if len(loss_over_time) > 1 else 0.0
+    print "loss from epoch %d: %f (down %f%%)" % (epoch, loss, percent_decrease)
+    if len(loss_over_time) >= 2 and loss_over_time[-1] / loss_over_time[-2] > 1 - DESIRED_LOSS_DECREASE_RATE:
+      if learning_rate < INITIAL_LEARNING_RATE / LEARNING_RATE_DECREASE_FACTOR**5:
+        break
       learning_rate = learning_rate / LEARNING_RATE_DECREASE_FACTOR
-      print "Decreasing learning rate to %f" % learning_rate
-      momentum = 0.9
+      momentum = momentum / 2 + 0.5
+      print "Decreasing learning rate to {}".format(learning_rate)
+      print "Increasing momentum to {}".format(momentum)
   return parameters, params_over_time
 
 def run_epoch(parameters, training_examples, learning_rate):
   global velocity, momentum
+  update_ratios = []
   for minibatch in slice_array(training_examples, MINIBATCH_SIZE):
     gradient = gradient_for_minibatch(parameters, minibatch)
     update = numpy.dot(gradient, learning_rate)
-    update_ratio = alg.norm(update) / alg.norm(parameters)
     if velocity is None:
       velocity = update
     else:
       velocity = numpy.add(numpy.dot(velocity, momentum), update)
+    update_ratio = alg.norm(velocity) / alg.norm(parameters)
+    update_ratios.append(update_ratio)
     parameters = numpy.subtract(parameters, velocity)
+  print
+  print "avg update ratio:", sum(update_ratios) / len(update_ratios)
   return parameters
 
 def gradient_for_minibatch(parameters, minibatch):

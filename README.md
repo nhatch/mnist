@@ -2,8 +2,6 @@
 
 An investigation into neural networks using the [MNIST database](http://yann.lecun.com/exdb/mnist/) of handwritten digits.
 
-Currently the softmax classifier has an error rate of about 10%.
-
 ## MNIST Viewer
 
 A simple page for viewing MNIST images.
@@ -16,6 +14,8 @@ A simple page for viewing MNIST images.
 ## Softmax Algorithm
 
 An implementation of the softmax algorithm that can be used to classify MNIST images.
+
+Currently it has an error rate of about 10%.
 
 1. Download/unzip the MNIST data (four files total) into this directory.
 2. Create soft links "train-images", "train-labels", "test-images", and "test-labels" for these files.

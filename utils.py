@@ -1,13 +1,13 @@
 import numpy
 import math
 
-REGULARIZATION_PENALTY = 0.01
+REGULARIZATION_PENALTY = 0.004
 
 def regularization_gradient_ignoring_constant(two_dimensional_matrix):
+  zeroed_matrix = numpy.copy(two_dimensional_matrix)
   # We don't want to penalize the constant term for each parameter vector
-  zeroer = numpy.identity(two_dimensional_matrix.shape[1])
-  zeroer[0,0] = 0
-  zeroed_matrix = numpy.dot(two_dimensional_matrix, zeroer)
+  for row in zeroed_matrix:
+    row[0] = 0
   return numpy.dot(2 * REGULARIZATION_PENALTY, zeroed_matrix)
 
 def square_parameters(parameters):
