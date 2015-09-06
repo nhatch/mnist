@@ -2,71 +2,82 @@ import struct
 import numpy
 import math
 import sys
+import random
 
 MINIBATCH_SIZE = 128
-INITIAL_LEARNING_RATE = 0.01
+INITIAL_LEARNING_RATE = 0.02
 LEARNING_RATE_DECREASE_FACTOR = 2.0
 DESIRED_LOSS_DECREASE_RATE = 0.0001 # 0.01%
 
-def use_algorithm(module):
-  global alg
-  alg = module
+global alg
 
 def run(training_examples, validation_examples, testing_examples):
-  global params_over_time
   if len(testing_examples[0][0]) != len(training_examples[0][0]):
     raise IOError, "training and testing data dimensions do not match"
-  parameters, params_over_time = train(training_examples, validation_examples)
+  parameters = train(training_examples, validation_examples)
   incorrect_predictions = test(parameters, testing_examples)
   print "error rate (%):", 100 * float(len(incorrect_predictions)) / len(testing_examples)
   save_incorrect_predictions(incorrect_predictions)
   alg.save_parameters(parameters)
 
 def train(training_examples, validation_examples):
-  global velocity, momentum
+  global done
+  done = False
+  epoch = 0
+  initialize_hyperparameters()
+  parameters = alg.initial_parameters(len(training_examples[0][0]))
+  while not done:
+    try:
+      random.shuffle(training_examples)
+      print "Epoch {}:".format(epoch)
+      new_parameters = run_epoch(parameters, training_examples)
+      loss = alg.loss(new_parameters, training_examples)
+      done = manage_learning_schedule(loss)
+      parameters = new_parameters
+      epoch += 1
+    except KeyboardInterrupt:
+      increase_momentum_and_decrease_learning_rate()
+  return parameters
+
+def initialize_hyperparameters():
+  global velocity, momentum, learning_rate, loss_over_time
   velocity = None
   momentum = 0.5
-  parameters = alg.initial_parameters(len(training_examples[0][0]))
-  params_over_time = []
-  loss_over_time = []
   learning_rate = INITIAL_LEARNING_RATE
-  epoch = 0
-  while True:
-    params_over_time.append(parameters)
-    epoch += 1
-    import random
-    random.shuffle(training_examples)
-    try:
-      parameters = run_epoch(parameters, training_examples, learning_rate)
-    except KeyboardInterrupt:
-      break
-    loss = alg.loss(parameters, training_examples)
-    loss_over_time.append(loss)
-    percent_decrease = (1 - loss_over_time[-1] / loss_over_time[-2]) * 100 if len(loss_over_time) > 1 else 0.0
-    print "loss from epoch %d: %f (down %f%%)" % (epoch, loss, percent_decrease)
-    if len(loss_over_time) >= 2 and loss_over_time[-1] / loss_over_time[-2] > 1 - DESIRED_LOSS_DECREASE_RATE:
-      if learning_rate < INITIAL_LEARNING_RATE / LEARNING_RATE_DECREASE_FACTOR**5:
-        break
-      learning_rate = learning_rate / LEARNING_RATE_DECREASE_FACTOR
-      momentum = momentum / 2 + 0.5
-      print "Decreasing learning rate to {}".format(learning_rate)
-      print "Increasing momentum to {}".format(momentum)
-  return parameters, params_over_time
+  loss_over_time = []
 
-def run_epoch(parameters, training_examples, learning_rate):
-  global velocity, momentum
+def manage_learning_schedule(loss):
+  global loss_over_time
+  loss_over_time.append(loss)
+  print_status_update(loss)
+  if len(loss_over_time) > 1 and loss_over_time[-1] / loss_over_time[-2] > 1 - DESIRED_LOSS_DECREASE_RATE:
+    increase_momentum_and_decrease_learning_rate()
+
+def print_status_update(loss):
+  if len(loss_over_time) > 1:
+    percent_decrease = (1 - loss_over_time[-1] / loss_over_time[-2]) * 100
+    print "loss: %f (down %f%%)" % (loss, percent_decrease)
+  else:
+    print "loss: %f" % (loss)
+
+def increase_momentum_and_decrease_learning_rate():
+  global learning_rate, momentum, done
+  if learning_rate < INITIAL_LEARNING_RATE / LEARNING_RATE_DECREASE_FACTOR**3:
+    done = True
+  else:
+    learning_rate = learning_rate / LEARNING_RATE_DECREASE_FACTOR
+    momentum = momentum / 2 + 0.5
+    print "Decreasing learning rate to {}".format(learning_rate)
+    print "Increasing momentum to {}".format(momentum)
+
+def run_epoch(parameters, training_examples):
   update_ratios = []
   for minibatch in slice_array(training_examples, MINIBATCH_SIZE):
     gradient = gradient_for_minibatch(parameters, minibatch)
-    update = numpy.dot(gradient, learning_rate)
-    if velocity is None:
-      velocity = update
-    else:
-      velocity = numpy.add(numpy.dot(velocity, momentum), update)
-    update_ratio = alg.norm(velocity) / alg.norm(parameters)
+    update = calculate_update(gradient)
+    parameters = numpy.subtract(parameters, update)
+    update_ratio = alg.norm(update) / alg.norm(parameters)
     update_ratios.append(update_ratio)
-    parameters = numpy.subtract(parameters, velocity)
-  print
   print "avg update ratio:", sum(update_ratios) / len(update_ratios)
   return parameters
 
@@ -84,6 +95,15 @@ def probability_gradient_for_minibatch(parameters, minibatch):
   total = reduce(numpy.add, example_gradients)
   return numpy.dot(total, 1.0/len(minibatch))
 
+def calculate_update(gradient):
+  global velocity, momentum, learning_rate
+  acceleration = numpy.dot(gradient, learning_rate)
+  if velocity is None:
+    velocity = acceleration
+  else:
+    velocity = numpy.add(numpy.dot(velocity, momentum), acceleration)
+  return velocity
+
 def slice_array(array, slice_length):
   counter = 0
   while counter < len(array):
@@ -92,6 +112,7 @@ def slice_array(array, slice_length):
     if counter % 1000 < slice_length:
       print ".",
       sys.stdout.flush()
+  print
 
 def test(parameters, testing_examples):
   incorrect_predictions = []
