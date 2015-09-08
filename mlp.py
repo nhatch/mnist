@@ -4,15 +4,19 @@ import utils
 
 NUM_CLASSES = 10
 NUM_HIDDEN_UNITS = 64
+# UNITS_LAYERS -- the number of units in each layer, not including the input layer,
+#                 in order of increasing abstractness (i.e. output layer at the end)
 UNITS_LAYERS = [NUM_HIDDEN_UNITS, NUM_CLASSES]
+# ACTIVATION_FUNCTION -- the output of a hidden unit as a function of the weighted
+#                        sum of its inputs
 ACTIVATION_FUNCTION = math.tanh
 DERIVATIVE_OF_ACTIVATION_FUNCTION = lambda(x): 1 - math.tanh(x)**2
 
-def initial_parameters(data_dimension):
-  lower_layer_sizes = [data_dimension] + UNITS_LAYERS[:-1]
+def initial_parameters(num_input_units):
+  lower_layer_sizes = [num_input_units] + UNITS_LAYERS[:-1]
   upper_layer_sizes = UNITS_LAYERS
   dimension_pairs = zip(upper_layer_sizes, lower_layer_sizes)
-  parameter_layers = map(lambda(x): _random_weights(*x), dimension_pairs)
+  parameter_layers = map(lambda(dimension_pair): _random_weights(*dimension_pair), dimension_pairs)
   # For convenience, even though these layers have different dimensions,
   # we wrap them in a numpy.array. This lets us add, subtract, and multiply
   # by scalars without explicitly iterating through the array.
@@ -20,102 +24,113 @@ def initial_parameters(data_dimension):
 
 def _random_weights(num_upper_units, num_lower_units):
   sigma = 1 / math.sqrt(num_upper_units)
-  # The +1 adds an extra column for the bias terms
+  # Initialize weights and biases by drawing from N(0, sigma**2).
+  # This helps avoid saturation: http://neuralnetworksanddeeplearning.com/chap3.html#weight_initialization
+  # The +1 adds an extra column for the bias terms.
   return numpy.dot(sigma, numpy.random.randn(num_upper_units, num_lower_units+1))
 
 def regularization_gradient(parameters):
-  _verify_type(parameters)
-  return map(utils.regularization_gradient_ignoring_constant, parameters)
+  return numpy.array(map(utils.regularization_gradient_ignoring_constant, parameters))
 
 def probability_gradient_for_example(parameters, example):
-  _verify_type(parameters)
   datum = example[0]
   label = example[1]
-  unit_outputs, derivative_unit_outputs = _calculate_outputs(parameters, datum)
-  output_delta_partials = unit_outputs[-1]
-  output_delta_partials[label] -= 1
-  delta_partials = _calculate_delta_partials(parameters, derivative_unit_outputs, output_delta_partials)
-  res = _calculate_gradient(delta_partials, unit_outputs)
-  return res
+  unit_activations, derivative_unit_activations = _calculate_unit_activations(parameters, datum)
+  # A unit input partial is the partial derivative of the loss function with
+  # respect to the input to a particular unit.
+  # For our loss function, and because the activation function for output units
+  # is the identity, the unit input partial for an output unit is simply the
+  # difference between the unit's activation (= the unit's input) and the desired
+  # activation for the unit (1 for the correct label, 0 otherwise).
+  output_unit_input_partials = unit_activations[-1]
+  output_unit_input_partials[label] -= 1
+  # The unit input partials for hidden units are calculated using backpropagation.
+  unit_input_partials = _calculate_unit_input_partials(parameters, derivative_unit_activations, output_unit_input_partials)
+  return _calculate_gradient(unit_input_partials, unit_activations)
 
-def _verify_type(parameters):
-  if any(map(lambda(parameter_layer): type(parameter_layer) != numpy.ndarray, parameters)):
-    raise StandardError
-
-def _calculate_outputs(parameters, datum, calculate_derivatives=True):
-  unit_outputs = []
+def _calculate_unit_activations(parameters, datum, calculate_derivatives=True):
+  unit_activations = []
   if calculate_derivatives:
-    derivative_unit_outputs = []
+    derivative_unit_activations = []
   previous_layer_outputs = datum
   for index, parameter_layer in enumerate(parameters):
-    previous_layer_outputs = numpy.insert(previous_layer_outputs, 0, 1)
-    unit_outputs.append(previous_layer_outputs)
+    previous_layer_outputs = numpy.insert(previous_layer_outputs, 0, 1) # for the bias
+    unit_activations.append(previous_layer_outputs)
     weighted_sums = numpy.dot(parameter_layer, previous_layer_outputs)
     if index < len(parameters) - 1:
       previous_layer_outputs = map(ACTIVATION_FUNCTION, weighted_sums)
       if calculate_derivatives:
         derivatives = map(DERIVATIVE_OF_ACTIVATION_FUNCTION, weighted_sums)
-        derivative_unit_outputs.append(derivatives)
+        derivative_unit_activations.append(derivatives)
     else:
       previous_layer_outputs = weighted_sums
-  unit_outputs.append(previous_layer_outputs)
+  unit_activations.append(previous_layer_outputs)
   if calculate_derivatives:
-    return unit_outputs, derivative_unit_outputs
+    return unit_activations, derivative_unit_activations
   else:
-    return unit_outputs
+    return unit_activations
 
-def _calculate_delta_partials(parameters, derivative_unit_outputs, output_delta_partials):
-  delta_partials = []
-  previous_delta_partials_layer = output_delta_partials
-  delta_partials.insert(0, previous_delta_partials_layer)
-  params_with_upper_deltas = zip(parameters[1:], derivative_unit_outputs)
+def _calculate_unit_input_partials(parameters, derivative_unit_activations, output_unit_input_partials):
+  unit_input_partials = [output_unit_input_partials]
+  previous_unit_input_partials_layer = output_unit_input_partials
+  params_with_upper_deltas = zip(parameters[1:], derivative_unit_activations)
   for parameter_layer, derivative_layer in reversed(params_with_upper_deltas):
-    sums = numpy.dot(previous_delta_partials_layer, parameter_layer)
+    sums = numpy.dot(previous_unit_input_partials_layer, parameter_layer)
     sums = sums[1:] # ignore the constant
-    previous_delta_partials_layer = numpy.multiply(sums, derivative_layer)
-    delta_partials.insert(0, previous_delta_partials_layer)
-  return delta_partials
+    previous_unit_input_partials_layer = numpy.multiply(sums, derivative_layer)
+    unit_input_partials.insert(0, previous_unit_input_partials_layer)
+  return unit_input_partials
 
-def _calculate_gradient(delta_partials, unit_outputs):
-  layer_gradients = map(lambda(x): _gradient_for_layer(*x), zip(delta_partials, unit_outputs[:-1]))
+def _calculate_gradient(unit_input_partials, unit_activations):
+  # The partial derivative of the loss function with respect to a particular
+  # weight in the parameter array is the product of the unit input partial
+  # for the "target unit" of that weight and the partial derivative of the
+  # input to the target unit with respect to that weight. The latter partial
+  # is just the activation of the "source unit". So, to calculate the
+  # gradient, we just need to multiply together the correct unit activations
+  # and unit input partials.
+  layers = zip(unit_input_partials, unit_activations[:-1])
+  layer_gradients = map(lambda(layer): _gradient_for_layer(*layer), layers)
   return numpy.array(layer_gradients)
 
-def _gradient_for_layer(next_delta_partials, previous_outputs):
-  po_reshape = previous_outputs.reshape(1, len(previous_outputs))
-  ndp_reshape = next_delta_partials.reshape(len(next_delta_partials), 1)
-  return numpy.dot(ndp_reshape, po_reshape)
+def _gradient_for_layer(target_unit_input_partials, source_unit_activations):
+  sua_reshape = source_unit_activations.reshape(1, len(source_unit_activations))
+  tuip_reshape = target_unit_input_partials.reshape(len(target_unit_input_partials), 1)
+  return numpy.dot(tuip_reshape, sua_reshape)
 
 def norm(parameter_type_array):
+  # Since each parameter layer has different dimensions, we have to get
+  # the norm of each layer individually.
   norm_squareds = map(lambda(x): numpy.linalg.norm(x)**2, parameter_type_array)
   return math.sqrt(sum(norm_squareds))
 
 def loss(parameters, examples):
-  _verify_type(parameters)
-  example_loss = sum(map(lambda(e): _loss_for_example(parameters, e), examples)) / len(examples)
-  return example_loss + _regularization_loss_for_parameters(parameters)
+  total_classification_loss = sum(map(lambda(e): _loss_for_example(parameters, e), examples))
+  avg_classification_loss = total_classification_loss / len(examples)
+  return avg_classification_loss + _regularization_loss_for_parameters(parameters)
 
 def _loss_for_example(parameters, example):
-  return _prediction_loss_for_example(parameters, example)
-
-def _prediction_loss_for_example(parameters, example):
   datum = example[0]
   label = example[1]
   expected_outputs = numpy.zeros(NUM_CLASSES); expected_outputs[label] = 1
-  actual_outputs = _calculate_outputs(parameters, datum, False)[-1]
+  actual_outputs = _calculate_unit_activations(parameters, datum, False)[-1]
+  # Standard squared loss, divided by two for some reason (???)
   return 0.5 * numpy.linalg.norm(numpy.subtract(expected_outputs, actual_outputs))**2
 
 def _regularization_loss_for_parameters(parameters):
   return sum(map(_regularization_loss_for_parameter_layer, parameters))
 
 def _regularization_loss_for_parameter_layer(two_dimensional_matrix):
+  # Standard L2-norm regularization, ignoring the bias terms
+  # TODO: move this into utils.py
   zeroer = numpy.identity(two_dimensional_matrix.shape[1])
   zeroer[0,0] = 0
   zeroed_matrix = numpy.dot(two_dimensional_matrix, zeroer)
   return utils.REGULARIZATION_PENALTY * numpy.linalg.norm(zeroed_matrix) ** 2
 
 def predict(parameters, datum):
-  unit_outputs = _calculate_outputs(parameters, datum, False)
-  return numpy.argmax(unit_outputs[-1])
+  outputs = _calculate_unit_activations(parameters, datum, False)[-1]
+  return numpy.argmax(outputs)
 
 def save_parameters(parameters):
   global mlp_parameters
