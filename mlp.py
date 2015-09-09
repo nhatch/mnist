@@ -30,14 +30,16 @@ def _random_weights(num_upper_units, num_lower_units):
   return numpy.dot(sigma, numpy.random.randn(num_upper_units, num_lower_units+1))
 
 def regularization_gradient(parameters):
-  return numpy.array(map(utils.regularization_gradient_ignoring_constant, parameters))
+  return numpy.array(map(utils.regularization_gradient_ignoring_bias, parameters))
 
 def probability_gradient_for_example(parameters, example):
   datum = example[0]
   label = example[1]
   unit_activations, derivative_unit_activations = _calculate_unit_activations(parameters, datum)
-  # A unit input partial is the partial derivative of the loss function with
+  # A "unit input partial" is the partial derivative of the loss function with
   # respect to the input to a particular unit.
+  # The "input" to a unit is the weighted sum of its inputs from the previous
+  # layer of the neural net, including bias.
   # For our loss function, and because the activation function for output units
   # is the identity, the unit input partial for an output unit is simply the
   # difference between the unit's activation (= the unit's input) and the desired
@@ -59,12 +61,15 @@ def _calculate_unit_activations(parameters, datum, calculate_derivatives=True):
     weighted_sums = numpy.dot(parameter_layer, previous_layer_outputs)
     if index < len(parameters) - 1:
       previous_layer_outputs = map(ACTIVATION_FUNCTION, weighted_sums)
+      # For backpropagation, we need to know the derivative of the activation of
+      # each hidden unit with respect to the input to that unit.
       if calculate_derivatives:
         derivatives = map(DERIVATIVE_OF_ACTIVATION_FUNCTION, weighted_sums)
         derivative_unit_activations.append(derivatives)
     else:
+      # For the output units, the activation function is the identity.
       previous_layer_outputs = weighted_sums
-  unit_activations.append(previous_layer_outputs)
+      unit_activations.append(previous_layer_outputs)
   if calculate_derivatives:
     return unit_activations, derivative_unit_activations
   else:
@@ -75,8 +80,18 @@ def _calculate_unit_input_partials(parameters, derivative_unit_activations, outp
   previous_unit_input_partials_layer = output_unit_input_partials
   params_with_upper_deltas = zip(parameters[1:], derivative_unit_activations)
   for parameter_layer, derivative_layer in reversed(params_with_upper_deltas):
+    # We can calculate that the unit input partial for a hidden unit T is
+    #   h'(a_T) * \sum_{S:T->S} w_TS \delta_S
+    # where a_T is the input to T, h' is the derivative of the activation
+    # funcion for T, T->S means that T sends its output to S, w_TS is the
+    # weight that S gives to T's output, and \delta_S is the unit input
+    # partial for S.
+    # The following line calculates the right-hand side of that product
+    # for all hidden units in the current layer.
     sums = numpy.dot(previous_unit_input_partials_layer, parameter_layer)
-    sums = sums[1:] # ignore the constant
+    # Ignore the constant, since it has no input (hence no unit input partial).
+    sums = sums[1:]
+    # Multiply each sum by the appropriate derivative.
     previous_unit_input_partials_layer = numpy.multiply(sums, derivative_layer)
     unit_input_partials.insert(0, previous_unit_input_partials_layer)
   return unit_input_partials
@@ -99,8 +114,8 @@ def _gradient_for_layer(target_unit_input_partials, source_unit_activations):
   return numpy.dot(tuip_reshape, sua_reshape)
 
 def norm(parameter_type_array):
-  # Since each parameter layer has different dimensions, we have to get
-  # the norm of each layer individually.
+  # Since each parameter layer has different dimensions, we have to manually
+  # add the norm-squareds and take the square root.
   norm_squareds = map(lambda(x): numpy.linalg.norm(x)**2, parameter_type_array)
   return math.sqrt(sum(norm_squareds))
 
@@ -114,7 +129,8 @@ def _loss_for_example(parameters, example):
   label = example[1]
   expected_outputs = numpy.zeros(NUM_CLASSES); expected_outputs[label] = 1
   actual_outputs = _calculate_unit_activations(parameters, datum, False)[-1]
-  # Standard squared loss, divided by two for some reason (???)
+  # Standard squared loss, divided by two for some reason
+  # (I think to make gradient calculation simpler?)
   return 0.5 * numpy.linalg.norm(numpy.subtract(expected_outputs, actual_outputs))**2
 
 def _regularization_loss_for_parameters(parameters):
