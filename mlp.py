@@ -119,12 +119,7 @@ def norm(parameter_type_array):
   norm_squareds = map(lambda(x): numpy.linalg.norm(x)**2, parameter_type_array)
   return math.sqrt(sum(norm_squareds))
 
-def loss(parameters, examples):
-  total_classification_loss = sum(map(lambda(e): _loss_for_example(parameters, e), examples))
-  avg_classification_loss = total_classification_loss / len(examples)
-  return avg_classification_loss + _regularization_loss_for_parameters(parameters)
-
-def _loss_for_example(parameters, example):
+def loss_for_example(parameters, example):
   datum = example[0]
   label = example[1]
   expected_outputs = numpy.zeros(NUM_CLASSES); expected_outputs[label] = 1
@@ -133,12 +128,11 @@ def _loss_for_example(parameters, example):
   # (I think to make gradient calculation simpler?)
   return 0.5 * numpy.linalg.norm(numpy.subtract(expected_outputs, actual_outputs))**2
 
-def _regularization_loss_for_parameters(parameters):
-  return sum(map(_regularization_loss_for_parameter_layer, parameters))
+def regularization_loss_for_parameters(parameters):
+  return sum(map(utils.regularization_loss_ignoring_bias, parameters))
 
-def _regularization_loss_for_parameter_layer(two_dimensional_matrix):
+def regularization_loss_ignoring_bias(two_dimensional_matrix):
   # Standard L2-norm regularization, ignoring the bias terms
-  # TODO: move this into utils.py
   zeroer = numpy.identity(two_dimensional_matrix.shape[1])
   zeroer[0,0] = 0
   zeroed_matrix = numpy.dot(two_dimensional_matrix, zeroer)

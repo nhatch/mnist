@@ -31,7 +31,7 @@ def train(training_examples, validation_examples):
       random.shuffle(training_examples)
       print "Epoch {}:".format(epoch)
       new_parameters = run_epoch(parameters, training_examples)
-      loss = alg.loss(new_parameters, training_examples)
+      loss = loss(new_parameters, training_examples)
       manage_learning_schedule(loss)
       parameters = new_parameters
       epoch += 1
@@ -113,6 +113,11 @@ def slice_array(array, slice_length):
       print ".",
       sys.stdout.flush()
   print
+
+def loss(parameters, examples):
+  total_classification_loss = sum(map(lambda(e): alg.loss_for_example(parameters, e), examples))
+  avg_classification_loss = total_classification_loss / len(examples)
+  return avg_classification_loss + alg.regularization_loss_for_parameters(parameters)
 
 def test(parameters, testing_examples):
   incorrect_predictions = []

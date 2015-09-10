@@ -8,7 +8,7 @@ def initial_parameters(data_dimension):
   return numpy.zeros((NUM_CLASSES, 1 + data_dimension))
 
 def regularization_gradient(parameters):
-  return utils.regularization_gradient_ignoring_constant(parameters)
+  return utils.regularization_gradient_ignoring_bias(parameters)
 
 def probability_gradient_for_example(parameters, example):
   datum = numpy.insert(example[0], 0, 1)
@@ -25,14 +25,19 @@ def _probability_of_example(parameters, datum, lbl):
 def _delta(x, y):
   return 1 if x == y else 0
 
+def loss_for_example(parameters, example):
+  ???
+
+def regularization_loss_for_parameters(parameters):
+  return utils.regularization_loss_ignoring_bias(parameters)
+
 def predict(parameters, datum):
   datum = numpy.insert(datum, 0, 1)
   exponents = numpy.dot(parameters, datum)
   return numpy.argmax(exponents)
 
-def distance_between(a, b):
-  difference = numpy.subtract(a, b)
-  return numpy.linalg.norm(difference)
+def norm(parameter_type_array):
+  return numpy.linalg.norm(parameter_type_array)
 
 def save_parameters(parameters):
   import idx
