@@ -3,9 +3,9 @@ import math
 
 REGULARIZATION_PENALTY = 0.004
 
-def regularization_gradient_ignoring_constant(two_dimensional_matrix):
+def regularization_gradient_ignoring_bias(two_dimensional_matrix):
   zeroed_matrix = numpy.copy(two_dimensional_matrix)
-  # We don't want to penalize the constant term for each parameter vector
+  # We don't want to penalize the bias term for each parameter vector
   for row in zeroed_matrix:
     row[0] = 0
   return numpy.dot(2 * REGULARIZATION_PENALTY, zeroed_matrix)

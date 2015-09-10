@@ -7,7 +7,7 @@ import random
 MINIBATCH_SIZE = 128
 INITIAL_LEARNING_RATE = 0.02
 LEARNING_RATE_DECREASE_FACTOR = 2.0
-DESIRED_LOSS_DECREASE_RATE = 0.0001 # 0.01%
+DESIRED_LOSS_DECREASE_RATE = 0.01
 
 global alg
 
@@ -32,7 +32,7 @@ def train(training_examples, validation_examples):
       print "Epoch {}:".format(epoch)
       new_parameters = run_epoch(parameters, training_examples)
       loss = alg.loss(new_parameters, training_examples)
-      done = manage_learning_schedule(loss)
+      manage_learning_schedule(loss)
       parameters = new_parameters
       epoch += 1
     except KeyboardInterrupt:
