@@ -131,13 +131,6 @@ def loss_for_example(parameters, example):
 def regularization_loss_for_parameters(parameters):
   return sum(map(utils.regularization_loss_ignoring_bias, parameters))
 
-def regularization_loss_ignoring_bias(two_dimensional_matrix):
-  # Standard L2-norm regularization, ignoring the bias terms
-  zeroer = numpy.identity(two_dimensional_matrix.shape[1])
-  zeroer[0,0] = 0
-  zeroed_matrix = numpy.dot(two_dimensional_matrix, zeroer)
-  return utils.REGULARIZATION_PENALTY * numpy.linalg.norm(zeroed_matrix) ** 2
-
 def predict(parameters, datum):
   outputs = _calculate_unit_activations(parameters, datum, False)[-1]
   return numpy.argmax(outputs)
