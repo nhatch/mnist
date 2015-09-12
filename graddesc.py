@@ -83,13 +83,13 @@ def run_epoch(parameters, training_examples):
 
 def gradient_for_minibatch(parameters, minibatch):
   return numpy.add(
-      probability_gradient_for_minibatch(parameters, minibatch),
+      loss_gradient_for_minibatch(parameters, minibatch),
       alg.regularization_gradient(parameters)
       )
 
-def probability_gradient_for_minibatch(parameters, minibatch):
+def loss_gradient_for_minibatch(parameters, minibatch):
   example_gradients = map(
-      lambda(example): alg.probability_gradient_for_example(parameters, example),
+      lambda(example): alg.loss_gradient_for_example(parameters, example),
       minibatch
       )
   total = reduce(numpy.add, example_gradients)
@@ -115,7 +115,8 @@ def slice_array(array, slice_length):
   print
 
 def loss(parameters, examples):
-  total_classification_loss = sum(map(lambda(e): alg.loss_for_example(parameters, e), examples))
+  classification_loss = lambda(e): alg.classification_loss_for_example(parameters, e)
+  total_classification_loss = sum(map(classification_loss, examples))
   avg_classification_loss = total_classification_loss / len(examples)
   return avg_classification_loss + alg.regularization_loss_for_parameters(parameters)
 

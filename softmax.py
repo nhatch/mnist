@@ -10,12 +10,12 @@ def initial_parameters(data_dimension):
 def regularization_gradient(parameters):
   return utils.regularization_gradient_ignoring_bias(parameters)
 
-def probability_gradient_for_example(parameters, example):
+def loss_gradient_for_example(parameters, example):
   datum = numpy.insert(example[0], 0, 1)
   label = example[1]
   probabilities = map(lambda(lbl): _probability_of_example(parameters, datum, lbl), range(NUM_CLASSES))
-  scalars = map(lambda(lbl): [probabilities[lbl] - _delta(lbl, label)], range(NUM_CLASSES))
-  return numpy.dot(scalars, datum.reshape((1, len(datum))))
+  prediction_errors = map(lambda(lbl): [probabilities[lbl] - _delta(lbl, label)], range(NUM_CLASSES))
+  return numpy.dot(prediction_errors, datum.reshape((1, len(datum))))
 
 def _probability_of_example(parameters, datum, lbl):
   dot_products = numpy.dot(parameters, datum)
@@ -25,7 +25,7 @@ def _probability_of_example(parameters, datum, lbl):
 def _delta(x, y):
   return 1 if x == y else 0
 
-def loss_for_example(parameters, example):
+def classification_loss_for_example(parameters, example):
   datum = numpy.insert(example[0], 0, 1)
   label = example[1]
   return -1 * math.log(_probability_of_example(parameters, datum, label))
@@ -44,3 +44,4 @@ def norm(parameter_type_array):
 def save_parameters(parameters):
   import idx
   idx.write("parameters", utils.square_parameters(parameters))
+

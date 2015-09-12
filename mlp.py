@@ -32,7 +32,7 @@ def _random_weights(num_upper_units, num_lower_units):
 def regularization_gradient(parameters):
   return numpy.array(map(utils.regularization_gradient_ignoring_bias, parameters))
 
-def probability_gradient_for_example(parameters, example):
+def loss_gradient_for_example(parameters, example):
   datum = example[0]
   label = example[1]
   unit_activations, derivative_unit_activations = _calculate_unit_activations(parameters, datum)
@@ -89,9 +89,9 @@ def _calculate_unit_input_partials(parameters, derivative_unit_activations, outp
     # The following line calculates the right-hand side of that product
     # for all hidden units in the current layer.
     sums = numpy.dot(previous_unit_input_partials_layer, parameter_layer)
-    # Ignore the constant, since it has no input (hence no unit input partial).
+    # We ignore the constant, since it has no input (hence no unit input partial).
     sums = sums[1:]
-    # Multiply each sum by the appropriate derivative.
+    # We multiply each sum by the appropriate derivative.
     previous_unit_input_partials_layer = numpy.multiply(sums, derivative_layer)
     unit_input_partials.insert(0, previous_unit_input_partials_layer)
   return unit_input_partials
@@ -119,13 +119,12 @@ def norm(parameter_type_array):
   norm_squareds = map(lambda(x): numpy.linalg.norm(x)**2, parameter_type_array)
   return math.sqrt(sum(norm_squareds))
 
-def loss_for_example(parameters, example):
+def classification_loss_for_example(parameters, example):
   datum = example[0]
   label = example[1]
   expected_outputs = numpy.zeros(NUM_CLASSES); expected_outputs[label] = 1
   actual_outputs = _calculate_unit_activations(parameters, datum, False)[-1]
-  # Standard squared loss, divided by two for some reason
-  # (I think to make gradient calculation simpler?)
+  # Standard squared loss, divided by two to simplify gradient calculation
   return 0.5 * numpy.linalg.norm(numpy.subtract(expected_outputs, actual_outputs))**2
 
 def regularization_loss_for_parameters(parameters):
@@ -143,7 +142,7 @@ def save_parameters(parameters):
 
 def numerical_approximation_of_gradient(parameters, example):
   delta = 2**-13
-  base_loss = _loss_for_example(parameters, example)
+  base_loss = _total_loss_for_example(parameters, example)
   gradient_layers = []
   for parameter_layer in parameters:
     gradient_layer = []
@@ -152,10 +151,13 @@ def numerical_approximation_of_gradient(parameters, example):
       gradient_row = []
       for j in range(len(row)):
         row[j] += delta
-        new_loss = _loss_for_example(parameters, example)
+        new_loss = _total_loss_for_example(parameters, example)
         gradient_row.append((new_loss - base_loss) / delta)
         row[j] -= delta
       gradient_layer.append(gradient_row)
     gradient_layers.append(numpy.array(gradient_layer))
   return numpy.array(gradient_layers)
+
+def _total_loss_for_example(parameters, example):
+  return classification_loss_for_example(parameters, example) + regularization_loss_for_parameters(parameters)
 
