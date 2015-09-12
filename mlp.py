@@ -43,9 +43,8 @@ def loss_gradient_for_example(parameters, example):
   # For our loss function, and because the activation function for output units
   # is the identity, the unit input partial for an output unit is simply the
   # difference between the unit's activation (= the unit's input) and the desired
-  # activation for the unit (1 for the correct label, 0 otherwise).
-  output_unit_input_partials = unit_activations[-1]
-  output_unit_input_partials[label] -= 1
+  # activation for the unit.
+  output_unit_input_partials = numpy.subtract(unit_activations[-1], _desired_activations(label))
   # The unit input partials for hidden units are calculated using backpropagation.
   unit_input_partials = _calculate_unit_input_partials(parameters, derivative_unit_activations, output_unit_input_partials)
   return _calculate_gradient(unit_input_partials, unit_activations)
@@ -113,6 +112,11 @@ def _gradient_for_layer(target_unit_input_partials, source_unit_activations):
   tuip_reshape = target_unit_input_partials.reshape(len(target_unit_input_partials), 1)
   return numpy.dot(tuip_reshape, sua_reshape)
 
+def _desired_activations(label):
+  activations = numpy.full(NUM_CLASSES, -1.0)
+  activations[label] = 1.0
+  return activations
+
 def norm(parameter_type_array):
   # Since each parameter layer has different dimensions, we have to manually
   # add the norm-squareds and take the square root.
@@ -122,7 +126,7 @@ def norm(parameter_type_array):
 def classification_loss_for_example(parameters, example):
   datum = example[0]
   label = example[1]
-  expected_outputs = numpy.zeros(NUM_CLASSES); expected_outputs[label] = 1
+  expected_outputs = _desired_activations(label)
   actual_outputs = _calculate_unit_activations(parameters, datum, False)[-1]
   # Standard squared loss, divided by two to simplify gradient calculation
   return 0.5 * numpy.linalg.norm(numpy.subtract(expected_outputs, actual_outputs))**2

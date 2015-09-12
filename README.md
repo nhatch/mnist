@@ -2,6 +2,10 @@
 
 An investigation into neural networks using the [MNIST database](http://yann.lecun.com/exdb/mnist/) of handwritten digits.
 
+Two machine learning algorithms have been implemented: softmax (multiclass logistic regression) and multilayer perceptron (MLP, also known as a neural network).
+
+Currently, the error rates for softmax and MLP are respectively about 10% and 7%.
+
 ## MNIST Viewer
 
 A simple page for viewing MNIST images.
@@ -11,11 +15,7 @@ A simple page for viewing MNIST images.
 3. Start a web server in this directory. For example: `python -m SimpleHTTPServer`
 4. Visit the server in a web browser. (In the example above, it's at [localhost:8000](http://localhost:8000).) Have fun!
 
-## Softmax Algorithm
-
-An implementation of the softmax algorithm that can be used to classify MNIST images.
-
-Currently it has an error rate of about 10%.
+## Trying out the algorithms
 
 1. Download/unzip the MNIST data (four files total) into this directory.
 2. Create soft links "train-images", "train-labels", "test-images", and "test-labels" for these files.
@@ -24,12 +24,14 @@ Currently it has an error rate of about 10%.
 5. If you're curious about the incorrect predictions, open up the viewer. (They're automatically saved to a file called `incorrect_predictions` and thereby automatically displayed.)
 
 ```python
-import softmax
-train = softmax.training_examples() # takes a few seconds
-test = softmax.testing_examples()
-# train = train[:1000] # if you want it to finish faster
-softmax.run(train, test) # takes quite a while
+import graddesc, softmax, mlp
+train = graddesc.training_examples() # takes a few seconds
+test = graddesc.testing_examples()
+graddesc.alg = mlp # or softmax
+graddesc.run(train[:50000], train[50000:], test) # takes quite a while
 ```
+
+Note: currently the validation examples (the second parameter to `graddesc.run`) aren't used for anything.
 
 ## IDX Manipulation
 
