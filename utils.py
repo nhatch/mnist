@@ -4,13 +4,13 @@ import math
 REGULARIZATION_PENALTY = 0.004
 
 def regularization_loss_ignoring_bias(two_dimensional_matrix):
-  matrix_without_bias = _remove_bias(two_dimenisonal_matrix)
+  matrix_without_bias = _remove_bias(two_dimensional_matrix)
   # Standard L2-norm regularization
-  return REGULARIZATION_PENALTY * numpy.linalg.norm(zeroed_matrix) ** 2
+  return REGULARIZATION_PENALTY * numpy.linalg.norm(matrix_without_bias) ** 2
 
 def regularization_gradient_ignoring_bias(two_dimensional_matrix):
-  matrix_without_bias = _remove_bias(two_dimenisonal_matrix)
-  return numpy.dot(2 * REGULARIZATION_PENALTY, zeroed_matrix)
+  matrix_without_bias = _remove_bias(two_dimensional_matrix)
+  return numpy.dot(2 * REGULARIZATION_PENALTY, matrix_without_bias)
 
 def _remove_bias(two_dimensional_matrix):
   copied_matrix = numpy.copy(two_dimensional_matrix)

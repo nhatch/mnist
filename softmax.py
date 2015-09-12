@@ -26,7 +26,9 @@ def _delta(x, y):
   return 1 if x == y else 0
 
 def loss_for_example(parameters, example):
-  ???
+  datum = numpy.insert(example[0], 0, 1)
+  label = example[1]
+  return -1 * math.log(_probability_of_example(parameters, datum, label))
 
 def regularization_loss_for_parameters(parameters):
   return utils.regularization_loss_ignoring_bias(parameters)

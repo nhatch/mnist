@@ -31,8 +31,8 @@ def train(training_examples, validation_examples):
       random.shuffle(training_examples)
       print "Epoch {}:".format(epoch)
       new_parameters = run_epoch(parameters, training_examples)
-      loss = loss(new_parameters, training_examples)
-      manage_learning_schedule(loss)
+      loss_this_epoch = loss(new_parameters, training_examples)
+      manage_learning_schedule(loss_this_epoch)
       parameters = new_parameters
       epoch += 1
     except KeyboardInterrupt:
@@ -62,7 +62,7 @@ def print_status_update(loss):
 
 def increase_momentum_and_decrease_learning_rate():
   global learning_rate, momentum, done
-  if learning_rate < INITIAL_LEARNING_RATE / LEARNING_RATE_DECREASE_FACTOR**3:
+  if learning_rate < INITIAL_LEARNING_RATE / LEARNING_RATE_DECREASE_FACTOR**2:
     done = True
   else:
     learning_rate = learning_rate / LEARNING_RATE_DECREASE_FACTOR
