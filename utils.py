@@ -21,12 +21,12 @@ def _remove_bias(two_dimensional_matrix):
 
 def square_parameters(parameters):
   side_length = int(math.sqrt(len(parameters[0]) - 1))
-  return map(lambda(v): _vector_to_ubyte_square(v, side_length), parameters)
+  to_square = lambda(layer): layer[1:].reshape(side_length, side_length)
+  return map(to_square, _normalize(parameters))
 
-def _vector_to_ubyte_square(parameter_vector, side_length):
-  parameter_vector = parameter_vector[1:] # ignore the constant term
-  factor = 255 / (parameter_vector.max() - parameter_vector.min())
-  shifted_vector = numpy.add(parameter_vector, -parameter_vector.min())
-  normalized_vector = numpy.dot(shifted_vector, factor).astype(int)
-  return normalized_vector.reshape(side_length, side_length)
+def _normalize(parameters):
+  without_bias = _remove_bias(parameters)
+  factor = 255 / (without_bias.max() - without_bias.min())
+  shifted = numpy.add(without_bias, -without_bias.min())
+  return numpy.dot(shifted, factor).astype(int)
 
