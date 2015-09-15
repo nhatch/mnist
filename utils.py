@@ -1,7 +1,7 @@
 import numpy
 import math
 
-REGULARIZATION_PENALTY = 0.004
+REGULARIZATION_PENALTY = 0.001
 
 def regularization_loss_ignoring_bias(two_dimensional_matrix):
   matrix_without_bias = _remove_bias(two_dimensional_matrix)
