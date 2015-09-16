@@ -2,7 +2,7 @@
 
 An investigation into neural networks using the [MNIST database](http://yann.lecun.com/exdb/mnist/) of handwritten digits.
 
-Two machine learning algorithms have been implemented: softmax (multiclass logistic regression) and multilayer perceptron (MLP, also known as a neural network).
+Two machine learning algorithms have been implemented: softmax (multiclass logistic regression) and multilayer perceptron (MLP, a kind of neural network).
 
 Currently, the error rates for softmax and MLP are respectively about 10% and 3%.
 
