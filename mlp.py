@@ -3,10 +3,9 @@ import math
 import utils
 
 NUM_CLASSES = 10
-NUM_HIDDEN_UNITS = 64
 # UNITS_LAYERS -- the number of units in each layer, not including the input layer,
 #                 in order of increasing abstractness (i.e. output layer at the end)
-UNITS_LAYERS = [NUM_HIDDEN_UNITS, NUM_CLASSES]
+UNITS_LAYERS = [100, 100, NUM_CLASSES]
 # ACTIVATION_FUNCTION -- the output of a hidden unit as a function of the weighted
 #                        sum of its inputs
 ACTIVATION_FUNCTION = math.tanh
@@ -113,8 +112,13 @@ def _gradient_for_layer(target_unit_input_partials, source_unit_activations):
   return numpy.dot(tuip_reshape, sua_reshape)
 
 def _desired_activations(label):
-  activations = numpy.full(NUM_CLASSES, -1.0)
-  activations[label] = 1.0
+  # Since the activation function for output units is the identity function,
+  # their activations could be anywhere from X*inf(tanh) to X*sup(tanh),
+  # where X is the number of units in the final hidden layer. The number 10
+  # was arbitrarily chosen as the target activation. Doubtless there exists
+  # a more principled strategy that I should have used.
+  activations = numpy.full(NUM_CLASSES, -10.0)
+  activations[label] = 10.0
   return activations
 
 def norm(parameter_type_array):

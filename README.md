@@ -4,7 +4,7 @@ An investigation into neural networks using the [MNIST database](http://yann.lec
 
 Two machine learning algorithms have been implemented: softmax (multiclass logistic regression) and multilayer perceptron (MLP, also known as a neural network).
 
-Currently, the error rates for softmax and MLP are respectively about 10% and 7%.
+Currently, the error rates for softmax and MLP are respectively about 10% and 3%.
 
 ## MNIST Viewer
 
@@ -28,7 +28,7 @@ import graddesc, softmax, mlp
 train = graddesc.training_examples() # takes a few seconds
 test = graddesc.testing_examples()
 graddesc.alg = mlp # or softmax
-graddesc.run(train[:50000], train[50000:], test) # takes quite a while
+graddesc.run(train, test, test) # takes quite a while
 ```
 
 Note: currently the validation examples (the second parameter to `graddesc.run`) aren't used for anything.
