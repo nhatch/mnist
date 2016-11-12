@@ -139,9 +139,8 @@ function createInputForTable(table, imageArray) {
       input.value = 0;
     } else if (input.value >= imageArray.length) {
       input.value = imageArray.length - 1;
-    } else {
-      showImage(imageArray[input.value], table);
     }
+    showImage(imageArray[input.value], table);
   }
   return input;
 }
