@@ -37,3 +37,9 @@ Note: currently the validation examples (the second parameter to `graddesc.run`)
 
 `idx.py` contains a more general IDX reader/writer, as well as some helper methods for preprocessing the MNIST data (cropping the images, for example).
 
+## Future work
+
+* Compare our approach to Nielsen's http://neuralnetworksanddeeplearning.com/ (which achieves 2% error rate with only one hidden layer)
+* Try using some other tricks: dropout, max-norm regularization, generative pre-training, other activation functions (ReLU, maxout)
+* GPU optimization
+
